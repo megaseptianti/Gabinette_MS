@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Gabinette MS v47 - Supabase Super Simple (Anti Gagal)</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" href="favicon.ico"/>
+<meta name="theme-color" content="#111827"/>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#172033;--muted:#697586;--line:#e6eaf0;--brand:#f97316;--brand2:#ea580c;--ok:#10b981;--supa:#3ecf8e}
+*{box-sizing:border-box;font-family:ui-sans-system,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
+body{margin:0;background:var(--bg);color:var(--ink);}
+button,input,textarea{font:inherit} button{transition:.12s} button:active{transform:scale(.98)}
+.wrap{max-width:520px;margin:0 auto;min-height:100vh;background:var(--bg);border-left:1px solid var(--line);border-right:1px solid var(--line);}
+header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;align-items:center;gap:12px}
+.logo{width:40px;height:40px;border-radius:12px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:800}
+h1{font-size:17px;margin:0}
+.badge{font-size:10px;font-weight:800;padding:4px 10px;border-radius:999px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin:14px;box-shadow:0 5px 20px rgba(23,32,51,.045)}
+.hero{background:linear-gradient(135deg,#172033,#263957);color:#fff;border-radius:22px;padding:20px;margin:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.vcard{border:1px solid var(--line);border-radius:16px;padding:12px;background:#fff;min-width:0}
+.btn{min-height:42px;border-radius:13px;border:1px solid var(--line);background:#fff;font-weight:750;cursor:pointer;padding:0 12px}
+.btn-dark{background:#172033;color:#fff;border-color:#172033}
+.btn-brand{background:linear-gradient(90deg,var(--brand),var(--brand2));color:#fff;border:0}
+.btn-danger{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}
+.btn-ok{background:var(--ok);color:#fff;border:0}
+.btn-supa{background:var(--supa);color:#000;border:0;font-weight:800}
+.input{width:100%;height:48px;border-radius:14px;border:1px solid var(--line);background:#f8fafc;padding:0 12px;font-weight:700;font-size:13px}
+.textarea{width:100%;min-height:80px;border-radius:14px;border:1px solid var(--line);background:#f8fafc;padding:12px;font-size:11px;font-family:monospace}
+.kembalian{font-size:12px;font-weight:800;padding:6px 10px;border-radius:999px}
+.ok{background:#e8f5e9;color:#2e7d32}.bad{background:#ffefef;color:#b42318}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;background:rgba(255,255,255,.96);backdrop-filter:blur(16px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:8px}
+.navbtn{height:54px;border-radius:14px;border:0;background:transparent;color:#8a7569;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;font-weight:800;cursor:pointer}
+.navbtn.active{background:#172033;color:#fff}
+table{width:100%;border-collapse:collapse;font-size:12px} th,td{padding:8px;border-bottom:1px solid #f6e8c8;text-align:left}
+.dropzone{border:2px dashed #3ecf8e;background:#f0fdf4;border-radius:16px;padding:18px;text-align:center;cursor:pointer}
+.db-dot{width:8px;height:8px;border-radius:999px;display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div class="logo">GB</div><div style="flex:1"><h1>GABINETTE MS v47</h1><div style="font-size:11px;color:var(--muted);font-weight:700">SUPABASE SIMPLE • ANTI GAGAL • PRODUKSI FIX</div></div><div class="badge" id="dbBadge">LOCAL</div></header>
+<div id="content"></div><div style="height:84px"></div></div>
+<nav>
+<button class="navbtn active" data-tab="beranda">🏠<span>Utama</span></button>
+<button class="navbtn" data-tab="jual">🛍️<span>Jual</span></button>
+<button class="navbtn" data-tab="stock">📦<span>Stock</span></button>
+<button class="navbtn" data-tab="bahan">🧾<span>Bahan</span></button>
+<button class="navbtn" data-tab="rab">📊<span>RAB</span></button>
+</nav>
+<script>
+const VARIANTS=[
+{id:'CKL',name:'Cokelat',stock:7},
+{id:'MTC',name:'Matcha',stock:4},
+{id:'CKC',name:'Cookies & Cream',stock:9},
+{id:'MTO',name:'Matcha Oreo',stock:8},
+{id:'DBC',name:'Double Choco',stock:6},
+{id:'STW',name:'Strawberry',stock:5},
+{id:'STM',name:'Straw Matcha',stock:9}
+];
+const MODAL=1847117;
+let cart={}; VARIANTS.forEach(v=>cart[v.id]=0); let uang=0; let tab='beranda';
+let stock=[...VARIANTS.map(v=>({...v, price: v.id==='MTC'||v.id==='CKL'?9000:10000, hpp: v.id==='MTC'?5308.5:v.id==='CKL'?5674:v.id==='CKC'?5583:v.id==='DBC'?6626:v.id==='MTO'?5749.5:v.id==='STW'?5945:5775.1}))];
+let bahan=[
+{name:'Whipping Cream (stok lama)',qty:978,unit:'gr',note:'Stok lama',min:150},
+{name:'Gabin',qty:84,unit:'pcs',note:'Stok awal',min:27},
+{name:'Bubuk Matcha',qty:0,unit:'gr',note:'Belum dicatat',min:20},
+{name:'Susu SKM',qty:0,unit:'gr',note:'Belum dicatat',min:100},
+{name:'Bubuk Cokelat',qty:45,unit:'gr',note:'Stok awal',min:50},
+{name:'Pewarna Cokelat',qty:0,unit:'ml',note:'Belum dicatat',min:5},
+{name:'Perisa Coklat',qty:0,unit:'ml',note:'Belum dicatat',min:5},
+{name:'Oreo',qty:0,unit:'gr',note:'Gram',min:30},
+{name:'Chocho Chips',qty:0,unit:'gr',note:'Belum dicatat',min:30},
+{name:'Strawberry',qty:0,unit:'gr',note:'Takaran pcs tidak tercantum',min:20},
+{name:'Selai Strawberry',qty:0,unit:'gr',note:'Belum dicatat',min:30},
+{name:'Gula Pasir',qty:0,unit:'gr',note:'Takaran pcs tidak tercantum',min:20},
+{name:'Foil Aluminium',qty:540,unit:'cm',note:'27 pcs lagi',min:200},
+{name:'Whipping Cream Haan',qty:0,unit:'gr',note:'25 g per loyang (9 pcs)',min:25},
+{name:'Whipping Cream Whipking',qty:0,unit:'gr',note:'75 g per loyang (9 pcs)',min:75},
+{name:'Whipping Cream KIS',qty:0,unit:'gr',note:'100 g per loyang (9 pcs)',min:100},
+{name:'SKM Dairy',qty:0,unit:'gr',note:'Semua varian kecuali Chocolate & Double Choco',min:100},
+{name:'SKM Bendera Kental Manis',qty:0,unit:'gr',note:'Untuk Chocolate & Double Choco',min:100}
+];
+const STORAGE_KEY='gabinette_ms_v29_data';
+const SUPA_URL_KEY='gabinette_supabase_url';
+const SUPA_KEY_KEY='gabinette_supabase_anon';
+const DB_MODE_KEY='gabinette_db_mode_v47';
+let stockEdits=[]; let productStockEdits=[]; let sales=[]; let purchases=[];
+let recipes={
+'MTC':{'0':22,'1':2,'2':1.11,'3':10},
+'CKL':{'0':22,'1':2,'4':1.1,'3':10,'5':0.3,'6':0.3},
+'CKC':{'0':22,'1':2,'7':5.9,'3':10},
+'DBC':{'0':22,'1':2,'4':1.1,'3':10,'5':0.3,'6':0.3,'8':8.8},
+'MTO':{'0':22,'1':2,'2':1.11,'3':10,'7':5.9},
+'STW':{'0':22,'1':2,'10':11.1,'3':10},
+'STM':{'0':22,'1':2,'9':0,'10':5.55,'3':10,'11':0,'2':0.55}
+};
+let recipeDraftVariant='MTC';
+let dbMode=localStorage.getItem(DB_MODE_KEY)||'local';
+let supabaseClient=null;
+let isSyncing=false;
+let lastSupaError='';
+
+function localDateKey(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function fmt(n){return Math.round(Number(n)||0).toLocaleString('id-ID')}
+function getSupaConfig(){return {url: localStorage.getItem(SUPA_URL_KEY)||'', anon: localStorage.getItem(SUPA_KEY_KEY)||''}}
+function saveSupaConfig(url, anon){localStorage.setItem(SUPA_URL_KEY, url.trim()); localStorage.setItem(SUPA_KEY_KEY, anon.trim());}
+function updateDbBadge(text, mode){
+  const el=document.getElementById('dbBadge'); if(!el) return;
+  el.textContent=text;
+  if(mode==='supabase'){el.style.background='#dcfce7'; el.style.color='#166534';}
+  else if(mode==='local'){el.style.background='#fff1d6'; el.style.color='#92400e';}
+  else{el.style.background='#ffefef'; el.style.color='#b42318';}
+}
+function initSupabase(){
+  const cfg=getSupaConfig();
+  if(!cfg.url || !cfg.anon){updateDbBadge('LOCAL','local'); return false;}
+  if(!window.supabase){setTimeout(initSupabase,1000); return false;}
+  try{
+    supabaseClient=window.supabase.createClient(cfg.url, cfg.anon);
+    updateDbBadge('SUPABASE ✓','supabase');
+    return true;
+  }catch(e){console.error(e); lastSupaError=e.message; updateDbBadge('ERROR','error'); return false;}
+}
+async function loadFromSupabase(){
+  if(!supabaseClient) return false;
+  try{
+    const {data, error} = await supabaseClient.from('gabinette_data').select('*').eq('id','main').single();
+    if(error){
+      if(error.code==='PGRST116') return false;
+      throw error;
+    }
+    if(data){
+      if(data.stock) stock=data.stock;
+      if(data.sales) sales=data.sales;
+      if(data.bahan) bahan=data.bahan;
+      if(data.recipes) recipes=data.recipes;
+      if(data.product_stock_edits) productStockEdits=data.product_stock_edits;
+      return true;
+    }
+  }catch(e){console.error(e); lastSupaError=e.message; throw e;}
+  return false;
+}
+async function saveToSupabase(){
+  if(dbMode!=='supabase' || !supabaseClient) return;
+  if(isSyncing) return;
+  isSyncing=true;
+  try{
+    const payload={id:'main', stock, sales, bahan, recipes, product_stock_edits:productStockEdits, updated_at:new Date().toISOString()};
+    let {error} = await supabaseClient.from('gabinette_data').upsert(payload, {onConflict:'id'});
+    if(error && error.message && error.message.includes('column') && error.message.includes('schema cache')){
+      // retry without updated_at if column missing
+      console.warn('Retrying without updated_at', error.message);
+      const minimalPayload={id:'main', stock, sales, bahan, recipes, product_stock_edits:productStockEdits};
+      const retry = await supabaseClient.from('gabinette_data').upsert(minimalPayload, {onConflict:'id'});
+      error = retry.error;
+    }
+    if(error) throw error;
+    updateDbBadge('SUPABASE ✓','supabase');
+    lastSupaError='';
+    const box=document.getElementById('supaErrorBox'); if(box) box.style.display='none';
+  }catch(e){
+    console.error(e);
+    lastSupaError=e.message;
+    let badge='SYNC GAGAL';
+    const m=e.message.toLowerCase();
+    if(m.includes('does not exist')||m.includes('42p01')) badge='TABEL BELUM ADA!';
+    else if(m.includes('policy')||m.includes('42501')||m.includes('rls')) badge='BUKA RLS/POLICY!';
+    else if(m.includes('api key')||m.includes('jwt')) badge='KEY SALAH!';
+    updateDbBadge(badge,'error');
+    const box=document.getElementById('supaErrorBox');
+    const txt=document.getElementById('supaErrorText');
+    if(box&&txt){
+      box.style.display='block';
+      txt.textContent='Error: '+e.message+'\n\nCopy SQL → SQL Editor → RUN';
+    }
+  }finally{isSyncing=false;}
+}
+function startRealtime(){
+  if(dbMode!=='supabase' || !supabaseClient) return;
+  try{
+    supabaseClient.channel('gabinette_changes').on('postgres_changes', {event:'*', schema:'public', table:'gabinette_data', filter:'id=eq.main'}, payload=>{
+      if(isSyncing) return;
+      const data=payload.new;
+      if(data){
+        stock=data.stock||stock;
+        sales=data.sales||sales;
+        bahan=data.bahan||bahan;
+        recipes=data.recipes||recipes;
+        productStockEdits=data.product_stock_edits||productStockEdits;
+        saveDataLocal();
+        render();
+      }
+    }).subscribe();
+  }catch(e){console.error(e)}
+}
+function loadSavedData(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
+    if(Array.isArray(saved.stock)&&saved.stock.length) stock=saved.stock;
+    if(Array.isArray(saved.sales)) sales=saved.sales;
+    if(Array.isArray(saved.bahan)&&saved.bahan.length) bahan=saved.bahan.map(b=>({...b}));
+    if(Array.isArray(saved.productStockEdits)) productStockEdits=saved.productStockEdits;
+    if(saved.recipes) recipes=saved.recipes;
+  }catch(e){}
+}
+function saveDataLocal(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({stock,sales,bahan,purchases,recipes,stockEdits,productStockEdits}))}catch(e){}}
+function saveData(){saveDataLocal(); if(dbMode==='supabase') saveToSupabase();}
+async function switchDbMode(mode){
+  dbMode=mode;
+  localStorage.setItem(DB_MODE_KEY, mode);
+  if(mode==='supabase'){
+    const cfg=getSupaConfig();
+    if(!cfg.url){alert('Isi dulu URL & Anon Key Supabase!'); dbMode='local'; localStorage.setItem(DB_MODE_KEY,'local'); updateDbBadge('LOCAL','local'); render(); return;}
+    const ok=initSupabase();
+    if(!ok){alert('Gagal init Supabase'); return;}
+    try{
+      await loadFromSupabase();
+      startRealtime();
+      await saveToSupabase();
+      alert('SUPABASE AKTIF ✓ Anti hilang & sync semua HP!');
+    }catch(e){
+      alert('Gagal koneksi Supabase: '+e.message+'\n\nPastikan sudah RUN SQL di Supabase SQL Editor (klik COPY SQL di bawah)!');
+    }
+  }else{
+    updateDbBadge('LOCAL','local');
+    alert('Mode LOCAL. Data hanya di HP ini.');
+  }
+  render();
+}
+function todaySales(){const key=localDateKey();return sales.filter(s=>s.date===key)}
+function sumSales(rows){return rows.reduce((a,s)=>({qty:a.qty+s.qty,omset:a.omset+s.omset,laba:a.laba+s.laba}),{qty:0,omset:0,laba:0})}
+function bepStats(){const labaPenjualan=sales.reduce((t,s)=>t+Number(s.laba||0),0);const labaTerkumpul=1364117+labaPenjualan;const sisa=Math.max(0,MODAL-labaTerkumpul);const persen=MODAL>0?(labaTerkumpul/MODAL)*100:0;return {labaPenjualan,labaTerkumpul,sisa,persen,barPersen:Math.max(0,Math.min(100,persen))}}
+function salesSummaryHTML(){
+  const rows=todaySales(), t=sumSales(rows);
+  return `<div class="card"><div style="display:flex;justify-content:space-between"><div><div style="font-size:17px;font-weight:850">Penjualan Hari Ini</div><div style="font-size:11px;color:var(--muted)">${new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div></div><span style="font-size:11px;background:#ecfdf5;color:#047857;padding:6px 9px;border-radius:999px">${rows.length} trx</span></div><div class="grid3" style="margin-top:12px"><div class="vcard"><div style="font-size:10px;color:var(--muted)">OMZET</div><div style="font-weight:850">Rp ${fmt(t.omset)}</div></div><div class="vcard"><div style="font-size:10px;color:var(--muted)">LABA</div><div style="font-weight:850;color:#047857">Rp ${fmt(t.laba)}</div></div><div class="vcard"><div style="font-size:10px;color:var(--muted)">TERJUAL</div><div style="font-weight:850">${t.qty} pcs</div></div></div></div>`;
+}
+function historyHTML(){
+  const rows=todaySales().slice().reverse();
+  return `<div class="card"><div style="font-weight:850;margin-bottom:8px">Riwayat Hari Ini</div>${rows.length?rows.map(s=>`<div class="vcard" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between"><b>${s.id}</b><span style="font-size:11px;color:var(--muted)">${s.time}</span></div><div style="font-size:12px;color:var(--muted)">${s.items.map(i=>`${i.name} × ${i.qty}`).join(' • ')}</div><div style="display:flex;justify-content:space-between"><span>${s.qty} pcs</span><b>Rp ${fmt(s.omset)}</b></div></div>`).join(''):'<div style="text-align:center;color:var(--muted);font-size:13px;padding:12px">Belum ada transaksi</div>'}</div>`;
+}
+function bahanHTML(){
+  return `<div class="hero"><div style="font-weight:850;font-size:18px">Stok Bahan Baku</div><div style="font-size:12px;opacity:.8">${bahan.length} jenis bahan</div></div><div class="card">${bahan.map((b,i)=>`<div class="vcard" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between"><div><div style="font-weight:800">${b.name}</div><div style="font-size:11px;color:var(--muted)">${b.note}</div></div><div style="text-align:right"><div style="font-weight:800">${b.qty} ${b.unit}</div></div></div><div class="grid2" style="margin-top:8px"><input id="bahanQty${i}" class="input" style="height:38px;padding-left:12px" type="number" value="${b.qty}"><button class="btn btn-dark" style="height:38px" onclick="simpanBahan(${i})">Simpan</button></div></div>`).join('')}</div>`;
+}
+function simpanBahan(i){const el=document.getElementById('bahanQty'+i);if(!el)return;bahan[i].qty=Number(el.value)||0;saveData();render();alert('Disimpan');}
+function stockHTML(){
+  const prodVariantId=window._prodVariantId||stock[0].id;
+  const prodQty=window._prodQty||'';
+  const prodRec=recipes[prodVariantId]||{};
+  let preview='';
+  if(Object.keys(prodRec).length&&Number(prodQty)>0){
+    preview=Object.entries(prodRec).map(([idx,per])=>{
+      const b=bahan[Number(idx)]; if(!b) return '';
+      const need=Number(per)*Number(prodQty);
+      return `<div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 0"><span>${b.name} <b>${need.toFixed(1)} ${b.unit}</b></span><span>Sisa ${(Number(b.qty||0)-need).toFixed(1)}</span></div>`;
+    }).join('');
+  }
+  return `<div class="hero"><div style="font-weight:850;font-size:18px">Stok Produk Jadi</div><div style="font-size:12px;opacity:.8">Total ${stock.reduce((a,v)=>a+v.stock,0)} pcs siap jual</div><div class="grid3" style="margin-top:12px">${stock.map(v=>`<div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px"><div style="font-size:10px;opacity:.8">${v.name}</div><div style="font-size:21px;font-weight:850">${v.stock}</div><div style="font-size:10px;opacity:.7">pcs</div></div>`).join('')}</div></div>
+  <div class="card" style="border:2px solid #f97316;background:linear-gradient(180deg,#fff,#fff8e7)">
+    <div style="font-size:18px;font-weight:850">🏭 Produksi Produk - FIX v47</div>
+    <div style="font-size:12px;color:var(--muted);margin:6px 0 14px">Bahan otomatis berkurang</div>
+    <select id="prodVariant" class="input" style="height:44px;margin:6px 0 10px" onchange="window._prodVariantId=this.value;render();">${stock.map(v=>`<option value="${v.id}" ${v.id===prodVariantId?'selected':''}>${v.name} - Stok ${v.stock}</option>`).join('')}</select>
+    <div class="grid2"><div><label style="font-size:12px;font-weight:800">Jumlah (pcs)</label><input id="prodQty" class="input" style="margin:6px 0 10px" type="number" value="${prodQty}" placeholder="9" oninput="window._prodQty=this.value;updateProdPreview()"></div><div><label style="font-size:12px;font-weight:800">Tanggal</label><input id="prodDate" class="input" style="margin:6px 0 10px" type="date" value="${localDateKey()}"></div></div>
+    <div id="prodPreview" style="background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px">${preview||'<div style="font-size:11px;color:var(--muted)">Masukkan jumlah produksi</div>'}</div>
+    <button class="btn btn-brand" style="width:100%;height:52px" onclick="prosesProduksi()">🚀 Produksi Sekarang</button>
+  </div>
+  <div class="card"><div style="font-size:18px;font-weight:850">Koreksi Stok Manual</div>${stock.map((v,i)=>`<div class="vcard" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between"><div><div style="font-weight:800">${v.name}</div><div style="font-size:11px;color:var(--muted)">${v.id}</div></div><div style="text-align:right"><div style="font-weight:850;font-size:18px">${v.stock} pcs</div></div></div><div class="grid2" style="margin-top:8px"><input id="editProductStock${i}" class="input" style="height:38px;padding-left:12px" type="number" value="${v.stock}"><button class="btn" onclick="simpanEditStokProduk(${i})">Simpan</button></div></div>`).join('')}</div>
+  <div class="card"><div style="font-size:18px;font-weight:850">Resep per Varian</div><select id="recipeVariant" class="input" style="height:44px;margin:12px 0" onchange="ubahVarianResep(this.value)">${stock.map(v=>`<option value="${v.id}" ${v.id===recipeDraftVariant?'selected':''}>${v.name}</option>`).join('')}</select>
+  ${bahan.map((b,i)=>`<div class="grid2" style="margin-bottom:8px"><div style="font-size:12px;font-weight:700">${b.name}</div><div><input class="input recipe-qty" style="height:42px" type="number" data-material="${i}" value="${(recipes[recipeDraftVariant]||{})[i]??''}"></div></div>`).join('')}
+  <button class="btn btn-brand" style="width:100%;margin-top:8px" onclick="simpanResep()">Simpan Resep</button></div>`;
+}
+function simpanEditStokProduk(index){
+  const item=stock[index];
+  const input=document.getElementById('editProductStock'+index);
+  if(!item||!input)return;
+  const next=Number(input.value); if(!Number.isFinite(next)||next<0)return;
+  const before=item.stock;
+  if(next>before){const rec=recipes[item.id]||{}; Object.entries(rec).forEach(([mIdx,per])=>{const b=bahan[Number(mIdx)]; if(b) b.qty=Math.max(0,Number(b.qty||0)-Number(per)*(next-before));});}
+  item.stock=next;
+  productStockEdits.push({id:'KOREKSI-'+Date.now(),productId:item.id,name:item.name,before,after:next,note:'Koreksi',date:localDateKey(new Date()),time:new Date().toLocaleTimeString('id-ID')});
+  saveData();render();
+}
+function updateProdPreview(){
+  const qtyEl=document.getElementById('prodQty');
+  const varEl=document.getElementById('prodVariant');
+  const prevEl=document.getElementById('prodPreview');
+  if(!qtyEl||!varEl||!prevEl) return;
+  window._prodQty=qtyEl.value; window._prodVariantId=varEl.value;
+  const prodRec=recipes[window._prodVariantId]||{};
+  const q=Number(window._prodQty||0);
+  if(!Object.keys(prodRec).length){prevEl.innerHTML='Resep belum diatur!';return;}
+  if(q<=0){prevEl.innerHTML='Masukkan jumlah';return;}
+  let html='<div style="font-weight:800;font-size:12px;margin-bottom:6px">Bahan untuk '+q+' pcs:</div>';
+  Object.entries(prodRec).forEach(([idx,per])=>{const b=bahan[Number(idx)]; if(!b) return; html+=`<div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0"><span>${b.name} ${ (Number(per)*q).toFixed(1)} ${b.unit}</span></div>`;});
+  prevEl.innerHTML=html;
+}
+function prosesProduksi(){
+  const vEl=document.getElementById('prodVariant');
+  const qEl=document.getElementById('prodQty');
+  const dEl=document.getElementById('prodDate');
+  if(!vEl||!qEl)return;
+  const qty=Number(qEl.value); if(!qty||qty<=0)return alert('Isi jumlah');
+  const idx=stock.findIndex(v=>v.id===vEl.value);
+  const item=stock[idx];
+  const rec=recipes[vEl.value]||{};
+  Object.entries(rec).forEach(([mIdx,per])=>{const b=bahan[Number(mIdx)]; if(b) b.qty=Math.max(0,Number(b.qty||0)-Number(per)*qty);});
+  const before=item.stock; item.stock+=qty;
+  const now=dEl&&dEl.value?new Date(dEl.value):new Date();
+  productStockEdits.push({id:'PRODUKSI-'+Date.now(),productId:item.id,name:item.name,before,after:item.stock,note:'Produksi +'+qty+' pcs',date:localDateKey(now),time:now.toLocaleTimeString('id-ID')});
+  saveData();window._prodQty='';render();alert('Produksi berhasil! '+before+' → '+item.stock);
+}
+function ubahVarianResep(id){recipeDraftVariant=id;render()}
+function simpanResep(){
+  const inputs=[...document.querySelectorAll('.recipe-qty')], next={};
+  for(const el of inputs){if(el.value==='')continue;const n=Number(el.value);if(n>0)next[el.dataset.material]=n;}
+  recipes[recipeDraftVariant]=next;saveData();render();alert('Resep disimpan');
+}
+function render(){
+  const c=document.getElementById('content'); const totalStock=stock.reduce((a,b)=>a+b.stock,0);
+  if(tab==='beranda'){
+    const bep=bepStats();
+    const allSales=sales.slice().sort((a,b)=>a.date.localeCompare(b.date));
+    const totalOmsetAll=allSales.reduce((a,s)=>a+s.omset,0);
+    const totalLabaAll=allSales.reduce((a,s)=>a+s.laba,0);
+    const totalQtyAll=allSales.reduce((a,s)=>a+s.qty,0);
+    const cfg=getSupaConfig();
+    const isSupa=dbMode==='supabase';
+    c.innerHTML=`
+    <div class="card" style="border:2px solid ${isSupa?'#3ecf8e':'#f97316'};background:linear-gradient(180deg,#fff,${isSupa?'#f0fdf4':'#fff8e7'})">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:15px;font-weight:850"><span class="db-dot" style="background:${isSupa?'#3ecf8e':'#f97316'}"></span> DATABASE: ${isSupa?'SUPABASE CLOUD ✓':'LOCAL STORAGE'}</div>
+        <span style="font-size:10px;background:${isSupa?'#3ecf8e':'#f97316'};color:${isSupa?'#000':'#fff'};padding:4px 10px;border-radius:999px">${isSupa?'ANTI HILANG':'RENTAN HILANG'}</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin:8px 0 12px">
+        ${isSupa?'Sync otomatis, anti hilang':'Local only, aktifkan Supabase'}
+      </div>
+      ${lastSupaError?`<div id="supaErrorBox" style="background:#ffefef;border:2px solid #fecdd3;border-radius:12px;padding:12px;margin-bottom:12px"><div style="font-size:12px;font-weight:800;color:#b42318">❌ ERROR: ${lastSupaError}</div><div id="supaErrorText" style="font-size:10px;font-family:monospace;color:#b42318;margin-top:6px;white-space:pre-wrap">${lastSupaError}</div><div style="font-size:11px;color:#b42318;margin-top:8px">Copy SQL → RUN di SQL Editor</div></div>`:`<div id="supaErrorBox" style="display:none;background:#ffefef;border:2px solid #fecdd3;border-radius:12px;padding:12px;margin-bottom:12px"><div id="supaErrorText" style="font-size:10px;font-family:monospace"></div></div>`}
+      <div class="grid2">
+        <button class="btn ${!isSupa?'btn-dark':''}" onclick="switchDbMode('local')">📱 Local Only</button>
+        <button class="btn ${isSupa?'btn-supa':'btn-brand'}" onclick="switchDbMode('supabase')">☁️ Supabase Cloud</button>
+      </div>
+      
+      <div style="margin-top:14px;padding:14px;background:#f8fafc;border:1px solid var(--line);border-radius:14px">
+        <div style="font-weight:800;font-size:13px;margin-bottom:4px">⚙️ Supabase Setup</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
+          1. supabase.com → New Project<br>2. SQL Editor → New Query → Paste SQL → RUN<br>3. Settings → API → Copy URL & Key
+        </div>
+        <div id="sqlTemplate" style="display:none">-- Jika error kolom version, hapus tabel dulu atau gunakan SQL ini (sudah fix tanpa version):
+create table gabinette_data (
+  id text primary key,
+  stock jsonb,
+  sales jsonb,
+  bahan jsonb,
+  recipes jsonb,
+  product_stock_edits jsonb,
+  updated_at timestamp
+);
+alter table gabinette_data disable row level security;</div>
+        <button class="btn" style="margin-top:8px;width:100%" onclick="copySQL()">📋 COPY SQL 1 KLIK</button>
+        <div style="margin-top:12px">
+          <label style="font-size:11px;font-weight:800">SUPABASE URL</label>
+          <input id="supaUrl" class="input" style="height:40px;margin:4px 0 8px" placeholder="https://xyz.supabase.co" value="${cfg.url}">
+          <label style="font-size:11px;font-weight:800">SUPABASE ANON KEY</label>
+          <textarea id="supaKey" class="textarea" placeholder="eyJhbGciOi...">${cfg.anon}</textarea>
+          <div class="grid2" style="margin-top:8px">
+            <button class="btn btn-dark" onclick="saveSupaConfigFromInput()">💾 Simpan Config</button>
+            <button class="btn" onclick="testSupaConnection()">🔌 Test Koneksi</button>
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-top:12px" class="grid2">
+        <button class="btn" onclick="migrateToSupa()">⬆️ Upload Local ke Cloud</button>
+        <button class="btn" onclick="downloadFromSupa()">⬇️ Download Cloud ke Local</button>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:8px">Run SQL dulu, badge harus hijau ✓</div>
+    </div>
+
+    <div class="card" style="background:linear-gradient(135deg,#3ecf8e,#10b981);color:#000;border:0">
+      <div style="font-size:14px;font-weight:800">📊 Data Terbaru</div>
+      <div style="font-size:18px;font-weight:850;margin:6px 0">48 pcs • 26 hari</div>
+      <div class="dropzone" style="background:#fff;color:#000;margin-top:14px;border-color:#000" onclick="document.getElementById('excelUpload').click()">
+        <div style="font-size:32px">📊</div>
+        <div style="font-weight:800;margin-top:6px">Upload Excel Terbaru (.xlsx)</div>
+      </div>
+      <input type="file" id="excelUpload" accept=".xlsx,.xls" style="display:none" onchange="handleExcelUpload(event)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+        <button class="btn" style="background:#000;color:#3ecf8e;font-weight:800" onclick="importExcelLatest()">📥 Import Excel Terbaru (26 hari)</button>
+        <button class="btn" style="background:rgba(0,0,0,.15);color:#000;border:1px solid rgba(0,0,0,.2)" onclick="exportDataJSON()">📤 Export JSON</button>
+      </div>
+    </div>
+    <div class="card"><div style="display:flex;justify-content:space-between"><div style="font-weight:800">Progress BEP</div><div style="font-size:11px;background:#fff1d6;padding:4px 10px;border-radius:999px">${bep.persen.toFixed(1)}% TERCAPAI</div></div><div style="height:10px;background:#f6e8c8;border-radius:999px;margin-top:12px;overflow:hidden"><div style="height:100%;width:${bep.barPersen}%;background:linear-gradient(90deg,#ff8a1e,#ff5c35)"></div></div><div style="margin-top:10px" class="grid3"><div class="vcard"><div style="font-size:10px;color:var(--muted)">MODAL</div><div style="font-weight:800">Rp ${fmt(MODAL)}</div></div><div class="vcard" style="background:#ffefef"><div style="font-size:10px;color:#a05a5a">SISA BEP</div><div style="font-weight:800;color:#b42318">Rp ${fmt(bep.sisa)}</div></div><div class="vcard" style="background:#e8f5e9"><div style="font-size:10px">LABA</div><div style="font-weight:800;color:#2e7d32">Rp ${fmt(bep.labaTerkumpul)}</div></div></div></div>
+    <div class="card"><div style="font-weight:800;margin-bottom:8px">Ringkasan Penjualan</div><div class="grid3"><div class="vcard"><div style="font-size:10px;color:var(--muted)">TERJUAL</div><div style="font-weight:800">${totalQtyAll} pcs</div></div><div class="vcard"><div style="font-size:10px;color:var(--muted)">OMSET</div><div style="font-weight:800">Rp ${fmt(totalOmsetAll)}</div></div><div class="vcard"><div style="font-size:10px;color:var(--muted)">LABA</div><div style="font-weight:800;color:#047857">Rp ${fmt(totalLabaAll)}</div></div></div></div>
+    <div class="hero"><div style="font-size:11px;opacity:.7;font-weight:800">READY STOCK</div><div style="font-size:34px;font-weight:800">${totalStock} <span style="font-size:18px;opacity:.8">PCS</span></div></div>`;
+    c.innerHTML = salesSummaryHTML() + c.innerHTML + salesHistoryAllHTML();
+  } else if(tab==='jual'){
+    const totalQty=Object.values(cart).reduce((a,b)=>a+b,0); const omset=stock.reduce((a,v)=>a+(cart[v.id]||0)*v.price,0); const laba=stock.reduce((a,v)=>a+(cart[v.id]||0)*(v.price-v.hpp),0); const kembali=uang-omset;
+    c.innerHTML='<div class="card"><div style="font-weight:800;margin-bottom:12px">Kasir • '+totalStock+' PCS READY • '+(dbMode==='supabase'?'☁️ SUPABASE':'📱 LOCAL')+'</div>'+stock.map(v=>'<div class="vcard" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;'+((cart[v.id]||0)>0?'background:#f0fdf4;border-color:#86efac':'')+'"><div style="width:40px;height:40px;background:#dcfce7;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px">'+v.id+'</div><div style="flex:1"><div style="font-weight:800">'+v.name+'</div><div style="font-size:12px">Rp '+fmt(v.price)+' • Stok '+v.stock+'</div></div><div style="display:flex;align-items:center;gap:6px"><button onclick="addCart(\''+v.id+'\',-1)" class="btn" style="width:32px;height:32px">-</button><div style="width:24px;text-align:center;font-weight:800">'+(cart[v.id]||0)+'</div><button onclick="addCart(\''+v.id+'\',1)" class="btn btn-dark" style="width:32px;height:32px">+</button></div></div>').join('')+'<div style="background:#111;color:#fff;border-radius:16px;padding:14px;margin-top:12px"><div style="display:flex;justify-content:space-between;font-size:12px;opacity:.8"><span>'+totalQty+' pcs</span><span>Omset Rp '+fmt(omset)+'</span></div><div style="display:flex;justify-content:space-between;align-items:end;margin-top:4px"><div><div style="font-size:11px;opacity:.6">TOTAL LABA</div><div style="font-size:22px;font-weight:800">Rp '+fmt(laba)+'</div></div><div style="text-align:right"><div style="font-size:11px;opacity:.6">TOTAL BAYAR</div><div style="font-size:18px;font-weight:800">Rp '+fmt(omset)+'</div></div></div></div><div style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-weight:800">Uang Bayar</div><div class="kembalian '+(kembali>=0?'ok':'bad')+'">Kembalian Rp '+fmt(kembali)+'</div></div><div style="position:relative"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--muted)">Rp</span><input id="uangInput" class="input" type="number" value="'+(uang||'')+'" oninput="setUang(this.value)" placeholder="0"/></div><div class="grid3" style="grid-template-columns:repeat(4,1fr);margin-top:10px">'+[{l:'Pas',v:omset},{l:'20k',v:20000},{l:'50k',v:50000},{l:'100k',v:100000},{l:'200k',v:200000},{l:'Clear',v:0}].map(b=>'<button class="btn '+(b.l==='Pas'?'btn-dark':'')+'" onclick="setUang('+b.v+')">'+b.l+'</button>').join('')+'</div><div class="grid2" style="margin-top:10px"><button class="btn btn-danger" style="width:100%;height:60px;font-size:14px;font-weight:800" onclick="batalInput()">Batal Input / Kosongkan</button><button class="btn" style="width:100%" onclick="setUang(0)">Reset Uang Bayar</button></div><button class="btn btn-brand" style="width:100%;height:54px;margin-top:12px;font-size:16px" onclick="jual()" '+(totalQty===0||uang<omset?'disabled':'')+'>JUAL • '+totalQty+' PCS • Rp '+fmt(omset)+'</button></div></div>';
+    c.innerHTML += historyHTML();
+  } else if(tab==='stock'){
+    c.innerHTML = stockHTML();
+  } else if(tab==='bahan'){
+    c.innerHTML = bahanHTML();
+  } else { 
+    c.innerHTML=`<div class="card"><div style="font-weight:800;font-size:18px">RAB • Modal Rp ${fmt(MODAL)}</div><div style="margin-top:12px"><table><thead><tr><th>Varian</th><th>HPP</th><th>Harga</th><th>Laba</th></tr></thead><tbody>${stock.map(v=>`<tr><td><b>${v.name}</b></td><td>Rp ${fmt(v.hpp)}</td><td><b>Rp ${fmt(v.price)}</b></td><td style="color:#2e7d32">Rp ${fmt(v.price-v.hpp)}</td></tr>`).join('')}</tbody></table></div></div>`; 
+  }
+}
+function addCart(id,d){const v=stock.find(x=>x.id===id);const cur=cart[id]||0;const nxt=Math.max(0,Math.min(v.stock,cur+d));cart[id]=nxt;render()}
+function setUang(v){uang=Number(v)||0;render();}
+function batalInput(){
+  cart={};VARIANTS.forEach(v=>cart[v.id]=0);uang=0;saveData();render();
+  const toast=document.createElement('div');
+  toast.textContent='Keranjang dikosongkan ✓';
+  toast.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#172033;color:#fff;padding:10px 18px;border-radius:999px;font-size:12px;font-weight:800;z-index:9999';
+  document.body.appendChild(toast);setTimeout(()=>toast.remove(),1500);
+}
+function jual(){
+  const qty=Object.values(cart).reduce((a,b)=>a+b,0);
+  if(qty===0)return alert('Keranjang kosong');
+  const omset=stock.reduce((a,v)=>a+(cart[v.id]||0)*v.price,0);
+  if(uang<omset)return alert('Uang bayar kurang');
+  const laba=stock.reduce((a,v)=>a+(cart[v.id]||0)*(v.price-v.hpp),0);
+  const items=stock.filter(v=>(cart[v.id]||0)>0).map(v=>({id:v.id,name:v.name,qty:cart[v.id],price:v.price,hpp:v.hpp}));
+  const now=new Date();
+  const sale={id:'TRX-'+now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'-'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0'),date:localDateKey(now),time:now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}),qty,omset,laba,paid:uang,change:uang-omset,items};
+  stock=stock.map(v=>({...v,stock:v.stock-(cart[v.id]||0)}));
+  sales.push(sale);saveData();
+  cart={};VARIANTS.forEach(v=>cart[v.id]=0);uang=0;render();
+  alert('Transaksi tersimpan! Omzet: Rp '+fmt(omset)+' Laba: Rp '+fmt(laba));
+}
+function copySQL(){const el=document.getElementById('sqlTemplate'); if(!el) return; const text=el.textContent; navigator.clipboard.writeText(text).then(()=>alert('SQL copied! Paste di Supabase SQL Editor & RUN')).catch(()=>{const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('SQL copied!')});}
+function saveSupaConfigFromInput(){
+  const urlEl=document.getElementById('supaUrl');
+  const keyEl=document.getElementById('supaKey');
+  if(!urlEl||!keyEl) return;
+  const url=urlEl.value.trim();
+  const anon=keyEl.value.trim();
+  if(!url||!anon){alert('Isi URL & Anon Key dulu!');return;}
+  saveSupaConfig(url, anon);
+  alert('Config Supabase disimpan! Klik Test Koneksi.');
+  initSupabase();
+}
+async function testSupaConnection(){
+  const cfg=getSupaConfig();
+  if(!cfg.url){alert('Isi config dulu!');return;}
+  alert('Mencoba koneksi Supabase...');
+  const ok=initSupabase();
+  if(!ok){alert('Gagal init');return;}
+  try{
+    const {data, error} = await supabaseClient.from('gabinette_data').select('id').limit(1);
+    if(error) throw error;
+    alert('Koneksi Supabase BERHASIL ✓ Tabel ada! Sekarang klik Supabase Cloud untuk aktifkan mode cloud.');
+  }catch(e){
+    alert('Koneksi gagal: '+e.message+'\n\nJalankan dulu SQL di Supabase SQL Editor! Klik COPY SQL di atas!');
+  }
+}
+async function migrateToSupa(){
+  if(dbMode!=='supabase'){alert('Aktifkan dulu mode Supabase Cloud');return;}
+  if(!confirm('Upload semua data local ke Supabase Cloud?')) return;
+  await saveToSupabase();
+  alert('Upload ke Cloud berhasil!');
+}
+async function downloadFromSupa(){
+  if(dbMode!=='supabase'){alert('Aktifkan dulu mode Supabase Cloud');return;}
+  if(!confirm('Download data dari Cloud ke local? Data local akan ditimpa.')) return;
+  try{
+    const ok=await loadFromSupabase();
+    if(ok){saveDataLocal(); render(); alert('Download dari Cloud berhasil!');}
+    else alert('Data cloud kosong (wajar kalau baru pertama)');
+  }catch(e){alert('Gagal: '+e.message)}
+}
+const EXCEL_LATEST=[
+{no:1,tanggal:'2026-09-19',choc:3,matcha:2,ckc:3,mto:0,dbc:2,stw:0,stm:3,total:13,omset:97000,laba:50379},
+{no:2,tanggal:'2026-09-20',choc:4,matcha:5,ckc:5,mto:3,dbc:2,stw:2,stm:4,total:25,omset:210000,laba:98769},
+{no:3,tanggal:'2026-09-21',choc:2,matcha:2,ckc:1,mto:3,dbc:2,stw:2,stm:1,total:13,omset:114000,laba:50562},
+{no:4,tanggal:'2026-09-22',choc:0,matcha:0,ckc:0,mto:2,dbc:1,stw:1,stm:0,total:4,omset:36000,laba:15999},
+{no:5,tanggal:'2026-09-23',choc:6,matcha:0,ckc:3,mto:0,dbc:1,stw:3,stm:0,total:13,omset:111000,laba:49229},
+{no:6,tanggal:'2026-09-24',choc:3,matcha:0,ckc:3,mto:1,dbc:0,stw:0,stm:4,total:11,omset:100000,laba:44586},
+{no:7,tanggal:'2026-09-26',choc:2,matcha:1,ckc:3,mto:0,dbc:2,stw:0,stm:2,total:10,omset:89000,laba:39068},
+{no:8,tanggal:'2026-09-27',choc:6,matcha:7,ckc:0,mto:8,dbc:5,stw:5,stm:3,total:34,omset:286000,laba:130379},
+{no:9,tanggal:'2026-09-29',choc:0,matcha:0,ckc:0,mto:0,dbc:0,stw:0,stm:1,total:1,omset:10000,laba:4224},
+{no:10,tanggal:'2026-09-30',choc:5,matcha:3,ckc:4,mto:1,dbc:0,stw:2,stm:3,total:18,omset:157000,laba:70752},
+{no:11,tanggal:'2026-10-01',choc:3,matcha:0,ckc:1,mto:3,dbc:0,stw:3,stm:0,total:10,omset:87000,laba:39518},
+{no:12,tanggal:'2026-10-02',choc:0,matcha:2,ckc:0,mto:1,dbc:0,stw:2,stm:0,total:5,omset:43000,laba:19743},
+{no:13,tanggal:'2026-10-03',choc:0,matcha:0,ckc:3,mto:3,dbc:0,stw:2,stm:0,total:8,omset:72000,laba:34112},
+{no:14,tanggal:'2026-10-04',choc:8,matcha:4,ckc:9,mto:1,dbc:9,stw:8,stm:5,total:44,omset:379000,laba:170481},
+{no:15,tanggal:'2026-10-05',choc:1,matcha:1,ckc:1,mto:0,dbc:2,stw:0,stm:0,total:5,omset:43000,laba:18389},
+{no:16,tanggal:'2026-10-06',choc:4,matcha:2,ckc:3,mto:1,dbc:2,stw:2,stm:4,total:18,omset:160000,laba:70360},
+{no:17,tanggal:'2026-10-07',choc:4,matcha:0,ckc:4,mto:4,dbc:5,stw:3,stm:1,total:21,omset:186000,laba:81854},
+{no:18,tanggal:'2026-10-08',choc:3,matcha:0,ckc:1,mto:1,dbc:2,stw:1,stm:2,total:10,omset:47000,laba:38243},
+{no:19,tanggal:'2026-10-09',choc:0,matcha:2,ckc:1,mto:0,dbc:2,stw:2,stm:0,total:7,omset:34000,laba:26796},
+{no:20,tanggal:'2026-10-10',choc:6,matcha:2,ckc:8,mto:3,dbc:5,stw:1,stm:2,total:27,omset:165000,laba:105560},
+{no:21,tanggal:'2026-10-11',choc:9,matcha:6,ckc:9,mto:7,dbc:5,stw:6,stm:4,total:46,omset:435000,laba:180655},
+{no:22,tanggal:'2026-10-12',choc:4,matcha:3,ckc:1,mto:1,dbc:0,stw:0,stm:3,total:12,omset:67000,laba:41579},
+{no:23,tanggal:'2026-10-13',choc:5,matcha:1,ckc:3,mto:0,dbc:2,stw:1,stm:2,total:14,omset:84000,laba:53308},
+{no:24,tanggal:'2026-10-14',choc:0,matcha:2,ckc:2,mto:1,dbc:2,stw:2,stm:0,total:9,omset:50000,laba:35463},
+{no:25,tanggal:'2026-10-15',choc:0,matcha:0,ckc:0,mto:1,dbc:2,stw:0,stm:0,total:3,omset:30000,laba:11136},
+{no:26,tanggal:'2026-10-16',choc:2,matcha:2,ckc:2,mto:0,dbc:0,stw:4,stm:0,total:10,omset:96000,laba:39227},
+];
+function importExcelLatest(){
+  if(!confirm('Import '+EXCEL_LATEST.length+' hari data terbaru (sampai 16 Okt 2026)? Stock update 48 pcs')) return;
+  stock=[
+    {id:'CKL',name:'Cokelat',stock:7, price:9000, hpp:5674},
+    {id:'MTC',name:'Matcha',stock:4, price:9000, hpp:5308.5},
+    {id:'CKC',name:'Cookies & Cream',stock:9, price:10000, hpp:5583},
+    {id:'MTO',name:'Matcha Oreo',stock:8, price:10000, hpp:5749.5},
+    {id:'DBC',name:'Double Choco',stock:6, price:10000, hpp:6626},
+    {id:'STW',name:'Strawberry',stock:5, price:10000, hpp:5945},
+    {id:'STM',name:'Straw Matcha',stock:9, price:10000, hpp:5775.1}
+  ];
+  EXCEL_LATEST.forEach(row=>{
+    const items=[];
+    if(row.choc>0) items.push({id:'CKL',name:'Cokelat',qty:row.choc,price:9000,hpp:5674});
+    if(row.matcha>0) items.push({id:'MTC',name:'Matcha',qty:row.matcha,price:9000,hpp:5308.5});
+    if(row.ckc>0) items.push({id:'CKC',name:'Cookies & Cream',qty:row.ckc,price:10000,hpp:5583});
+    if(row.mto>0) items.push({id:'MTO',name:'Matcha Oreo',qty:row.mto,price:10000,hpp:5749.5});
+    if(row.dbc>0) items.push({id:'DBC',name:'Double Choco',qty:row.dbc,price:10000,hpp:6626});
+    if(row.stw>0) items.push({id:'STW',name:'Strawberry',qty:row.stw,price:10000,hpp:5945});
+    if(row.stm>0) items.push({id:'STM',name:'Straw Matcha',qty:row.stm,price:10000,hpp:5775.1});
+    const sale={id:'EXCEL-'+row.tanggal+'-'+row.no,date:row.tanggal,time:'12:00',qty:row.total,omset:row.omset,laba:row.laba,paid:row.omset,change:0,items};
+    const existing=sales.findIndex(s=>s.date===row.tanggal&&s.id.startsWith('EXCEL-'));
+    if(existing>=0) sales[existing]=sale; else sales.push(sale);
+  });
+  saveData();render();alert('Import berhasil! '+EXCEL_LATEST.length+' hari, Stock 48 pcs');
+}
+function salesHistoryAllHTML(){
+  const all=sales.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);
+  if(!all.length) return '';
+  return `<div class="card"><div style="font-weight:850;margin-bottom:8px">Riwayat Semua Penjualan</div><div style="font-size:11px;color:var(--muted);margin-bottom:8px">Total ${sales.length} transaksi • Terbaru 16 Okt 2026</div>${all.map(s=>`<div class="vcard" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between"><b>${s.date}</b><b>Rp ${fmt(s.omset)}</b></div><div style="font-size:11px;color:var(--muted)">${s.items.map(i=>`${i.name} × ${i.qty}`).join(' • ')}</div><div style="font-size:11px">${s.qty} pcs • Laba Rp ${fmt(s.laba)} ${s.id.startsWith('EXCEL')?'<span style="background:#dcfce7;padding:2px 6px;border-radius:999px;font-size:9px">EXCEL</span>':''}</div></div>`).join('')}</div>`;
+}
+function handleExcelUpload(e){
+  const file=e.target.files[0]; if(!file) return;
+  if(typeof XLSX==='undefined'){alert('Library Excel belum loaded');return;}
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=new Uint8Array(ev.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const ws=wb.Sheets['Rekap Penjualan']||wb.Sheets[wb.SheetNames[0]];
+      const json=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      let headerRow=-1;
+      for(let i=0;i<Math.min(json.length,15);i++){const row=json[i].join(' ').toLowerCase(); if(row.includes('chocolate')||row.includes('tanggal')){headerRow=i;break;}}
+      if(headerRow<0){alert('Format tidak dikenali');return;}
+      const headers=json[headerRow].map(h=>String(h).toLowerCase().trim());
+      const idxTanggal=headers.findIndex(h=>h.includes('tanggal'));
+      const idxChoc=headers.findIndex(h=>h.includes('chocolate')||h.includes('cokelat'));
+      const idxMatcha=headers.findIndex(h=>h==='matcha');
+      const idxCkc=headers.findIndex(h=>h.includes('cookies'));
+      const idxMto=headers.findIndex(h=>h.includes('matcha oreo'));
+      const idxDbc=headers.findIndex(h=>h.includes('double'));
+      const idxStw=headers.findIndex(h=>h.includes('strawberry')&&!h.includes('matcha'));
+      const idxStm=headers.findIndex(h=>h.includes('matcha strawberry')||h.includes('straw matcha'));
+      const idxTotal=headers.findIndex(h=>h==='total'&&!h.includes('omset'));
+      const idxOmset=headers.findIndex(h=>h.includes('total omset')||h==='total omset');
+      const idxLaba=headers.findIndex(h=>h.includes('total laba'));
+      let imported=0;
+      for(let r=headerRow+1;r<json.length;r++){
+        const row=json[r]; if(!row||row.length===0) continue;
+        let tglRaw=row[idxTanggal]; if(!tglRaw) continue;
+        if(String(tglRaw).toLowerCase().includes('stock')||String(tglRaw).toLowerCase().includes('tester')||String(tglRaw).toLowerCase().includes('batch')) continue;
+        let tanggal='';
+        if(tglRaw instanceof Date){tanggal=localDateKey(tglRaw);}
+        else if(typeof tglRaw==='number'){const dt=XLSX.SSF.parse_date_code(tglRaw); if(dt) tanggal=`${dt.y}-${String(dt.m).padStart(2,'0')}-${String(dt.d).padStart(2,'0')}`;}
+        else{
+          const s=String(tglRaw).trim();
+          const bulanMap={jan:'01',feb:'02',mar:'03',apr:'04',mei:'05',may:'05',jun:'06',jul:'07',aug:'08',agu:'08',sep:'09',oct:'10',okt:'10',nov:'11',dec:'12',des:'12'};
+          const m=s.match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
+          if(m){const b=bulanMap[m[2].toLowerCase().substring(0,3)]||'01'; tanggal=`${m[3]}-${b}-${String(m[1]).padStart(2,'0')}`;}
+          else{const m2=s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/); if(m2) tanggal=`${m2[3]}-${String(m2[2]).padStart(2,'0')}-${String(m2[1]).padStart(2,'0')}`; else continue;}
+        }
+        const getQty=(idx)=>{if(idx<0) return 0; const v=row[idx]; const n=Number(String(v).replace(/[^0-9.-]/g,'')); return Number.isFinite(n)?Math.round(n):0;};
+        const choc=getQty(idxChoc), m=getQty(idxMatcha), ckc=getQty(idxCkc), mto=getQty(idxMto), dbc=getQty(idxDbc), stw=getQty(idxStw), stm=getQty(idxStm);
+        const total=getQty(idxTotal)|| (choc+m+ckc+mto+dbc+stw+stm);
+        if(total===0) continue;
+        let omset=row[idxOmset]||0; if(typeof omset==='string') omset=Number(omset.replace(/[^0-9]/g,''))||0;
+        let laba=row[idxLaba]||0; if(typeof laba==='string') laba=Number(laba.replace(/[^0-9]/g,''))||0;
+        if(omset===0) omset=total*9000; if(laba===0) laba=Math.round(total*3000);
+        const items=[];
+        if(choc>0) items.push({id:'CKL',name:'Cokelat',qty:choc,price:9000,hpp:5674});
+        if(m>0) items.push({id:'MTC',name:'Matcha',qty:m,price:9000,hpp:5308.5});
+        if(ckc>0) items.push({id:'CKC',name:'Cookies & Cream',qty:ckc,price:10000,hpp:5583});
+        if(mto>0) items.push({id:'MTO',name:'Matcha Oreo',qty:mto,price:10000,hpp:5749.5});
+        if(dbc>0) items.push({id:'DBC',name:'Double Choco',qty:dbc,price:10000,hpp:6626});
+        if(stw>0) items.push({id:'STW',name:'Strawberry',qty:stw,price:10000,hpp:5945});
+        if(stm>0) items.push({id:'STM',name:'Straw Matcha',qty:stm,price:10000,hpp:5775.1});
+        const sale={id:'EXCEL-'+tanggal+'-'+r,date:tanggal,time:'12:00',qty:total,omset:omset,laba:laba,paid:omset,change:0,items};
+        const existing=sales.findIndex(s=>s.date===tanggal&&s.id.startsWith('EXCEL-'));
+        if(existing>=0) sales[existing]=sale; else sales.push(sale);
+        imported++;
+      }
+      saveData();render();alert('Upload Excel berhasil! '+imported+' hari terimport');
+    }catch(err){alert('Gagal baca Excel: '+err.message)}
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value='';
+}
+function exportDataJSON(){
+  const data={stock,sales,bahan,purchases,recipes,stockEdits,productStockEdits,exportedAt:new Date().toISOString(),version:'v47'};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url;a.download='gabinette-backup-'+localDateKey()+'.json';a.click(); URL.revokeObjectURL(url);
+}
+document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.navbtn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  tab=b.dataset.tab;
+  render();
+}));
+loadSavedData();
+saveData();
+setTimeout(async ()=>{
+  const cfg=getSupaConfig();
+  if(cfg.url) initSupabase();
+  if(dbMode==='supabase' && supabaseClient){
+    try{await loadFromSupabase(); startRealtime();}catch(e){console.error(e)}
+  }
+  updateDbBadge(dbMode==='supabase'?(supabaseClient?'SUPABASE ✓':'SUPABASE...'):'LOCAL', dbMode);
+  render();
+}, 800);
+render();
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}
+</script>
+</body>
+</html>
